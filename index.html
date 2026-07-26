@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuankietMod - Get Key</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background: #0b0e14; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: #141a24; width: 400px; border-radius: 28px; padding: 24px 20px 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.8); border: 1px solid #2a3340; }
+        .header { display: flex; justify-content: space-between; align-items: center; color: #b0c4de; font-size: 14px; font-weight: 500; }
+        .header .brand { color: #f0c040; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+        .badge { background: #1f2a36; padding: 6px 14px; border-radius: 40px; color: #8aa3c9; }
+        .task-bar { margin: 18px 0 12px; background: #1e2632; border-radius: 40px; padding: 8px 16px; display: flex; justify-content: space-between; color: #b8cef0; font-weight: 500; }
+        .task-bar span:first-child { font-size: 14px; }
+        .task-bar .percent { color: #f5c542; }
+        .sub { color: #8ea4c9; font-size: 13px; margin: 4px 0 16px; }
+        .app-selector { background: #10161e; border-radius: 40px; padding: 6px 8px; display: flex; gap: 6px; border: 1px solid #2d3848; margin-bottom: 18px; }
+        .app-btn { flex: 1; text-align: center; padding: 10px 0; border-radius: 40px; font-weight: 600; font-size: 15px; color: #6c81a5; background: transparent; border: none; cursor: pointer; transition: 0.2s; }
+        .app-btn.active { background: #2f3b4e; color: #f5e7b0; box-shadow: inset 0 0 0 1px #5b6f8f; }
+        .app-btn:not(.active):hover { background: #1f2836; color: #b0c8f0; }
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 20px; }
+        .plan { background: #111923; border-radius: 18px; padding: 16px 8px; text-align: center; border: 1px solid #25303e; cursor: pointer; transition: 0.15s; }
+        .plan.active { border-color: #f5c542; background: #1a2332; box-shadow: 0 0 0 1px #f5c54255; }
+        .plan .label { color: #9bb1d6; font-size: 14px; font-weight: 500; }
+        .plan .price { color: #f5e7b0; font-size: 22px; font-weight: 700; margin: 6px 0 2px; }
+        .plan .note { color: #6d85af; font-size: 11px; }
+        .plan .subnote { color: #f5c542; font-size: 11px; font-weight: 500; }
+        .generate-btn { background: #f5c542; border: none; border-radius: 60px; padding: 16px; width: 100%; font-weight: 700; font-size: 18px; color: #0b0e14; cursor: pointer; transition: 0.2s; margin: 6px 0 10px; }
+        .generate-btn:hover { background: #ffd966; transform: scale(1.01); }
+        .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .result-box { background: #0d131d; border-radius: 20px; padding: 14px 16px; border: 1px solid #2b3648; margin-top: 12px; }
+        .key-display { color: #b3d0ff; font-size: 15px; word-break: break-all; font-family: 'Courier New', monospace; background: #070b10; padding: 10px 12px; border-radius: 14px; border: 1px solid #2f3d55; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+        .key-meta { display: flex; justify-content: space-between; font-size: 12px; color: #7a92bb; margin: 8px 0 4px; }
+        .key-meta span:last-child { color: #f5b342; }
+        .webhook-log { font-size: 11px; color: #4f6a8f; margin-top: 10px; text-align: center; border-top: 1px solid #1e2838; padding-top: 12px; }
+        .countdown { color: #f5b342; font-weight: 600; background: #1a2332; padding: 4px 12px; border-radius: 40px; display: inline-block; margin-top: 4px; }
+        .flex-row { display: flex; justify-content: space-between; align-items: center; }
+        .input-row { display: flex; gap: 8px; margin: 10px 0 6px; }
+        .input-row input { flex: 1; background: #0d131d; border: 1px solid #2b3648; border-radius: 40px; padding: 10px 14px; color: #d0e0ff; font-size: 14px; outline: none; }
+        .input-row input::placeholder { color: #4f6a8f; }
+        .input-row button { background: #2f3b4e; border: none; border-radius: 40px; padding: 10px 20px; color: #f5e7b0; font-weight: 600; cursor: pointer; transition: 0.15s; }
+        .input-row button:hover { background: #3e4d64; }
+        .status-msg { font-size: 12px; color: #8bc34a; margin-top: 4px; }
+        .buy-tag { background: #f5c54233; color: #f5c542; font-size: 10px; padding: 2px 10px; border-radius: 30px; display: inline-block; margin-top: 2px; border: 1px solid #f5c54255; }
+        .hidden-key { filter: blur(8px); user-select: none; background: #0a0f16; }
+        .revealed-key { filter: none; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <span class="brand">TuankietMod</span>
+        <span class="badge">🔑 GET KEY</span>
+    </div>
+
+    <div class="task-bar">
+        <span>📋 Nhiệm vụ hiện có</span>
+        <span class="percent">63%</span>
+    </div>
+    <div class="sub">Nhiệm vụ đổi đào — get thoải mái</div>
+
+    <div class="app-selector" id="appSelector">
+        <button class="app-btn active" data-app="freefire">Free Fire</button>
+        <button class="app-btn" data-app="freefiremax">Free Fire Max</button>
+    </div>
+
+    <div class="plan-grid" id="planGrid">
+        <div class="plan active" data-plan="free">
+            <div class="label">🆓 FREE</div>
+            <div class="price">Free</div>
+            <div class="note">Key 24h</div>
+            <div class="subnote">Get-KeyA0-XXXXXXXXXX</div>
+        </div>
+        <div class="plan" data-plan="admin">
+            <div class="label">👑 Admin 30 day</div>
+            <div class="price">30 Day</div>
+            <div class="note">Key quyền admin</div>
+            <div class="subnote">AdminLeanhQuy-...</div>
+            <div class="buy-tag">🛒 MUA KEY</div>
+        </div>
+    </div>
+
+    <div class="input-row">
+        <input type="text" id="userInput" placeholder="Nhập mã / tên" value="TuankietMod">
+        <button id="confirmUserBtn">Xác nhận</button>
+    </div>
+    <div id="userStatus" class="status-msg">⏳ Chưa xác nhận người dùng</div>
+
+    <button class="generate-btn" id="generateBtn" disabled>▶ GENERATE</button>
+
+    <div class="result-box" id="resultBox">
+        <div class="key-display hidden-key" id="keyDisplay">🔒 Chờ 15 phút</div>
+        <div class="key-meta">
+            <span id="gameLabel">Game: Free Fire</span>
+            <span id="deviceLabel">Devices: 1 Máy Duy Nhất</span>
+        </div>
+        <div class="flex-row">
+            <span id="expireLabel" style="color:#7a92bb; font-size:12px;">Time Expired: 24 Giờ</span>
+            <span class="countdown" id="countdownTimer">⏳ 15:00</span>
+        </div>
+        <div id="webhookStatus" style="font-size:11px; color:#4f6a8f; margin-top:6px;">⏳ Đợi xác nhận người dùng...</div>
+    </div>
+    <div class="webhook-log">📨 Webhook: discord.com/api/webhooks/...</div>
+</div>
+
+<script>
+    (function() {
+        let selectedApp = 'freefire';
+        let selectedPlan = 'free';
+        let currentKey = '';
+        let keyGeneratedAt = null;
+        let countdownInterval = null;
+        let keyReady = false;
+        let userConfirmed = false;
+        let userName = '';
+        let isGenerating = false;
+
+        const keyDisplay = document.getElementById('keyDisplay');
+        const gameLabel = document.getElementById('gameLabel');
+        const expireLabel = document.getElementById('expireLabel');
+        const countdownEl = document.getElementById('countdownTimer');
+        const webhookStatus = document.getElementById('webhookStatus');
+        const generateBtn = document.getElementById('generateBtn');
+        const userInput = document.getElementById('userInput');
+        const confirmBtn = document.getElementById('confirmUserBtn');
+        const userStatus = document.getElementById('userStatus');
+
+        document.querySelectorAll('.app-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (isGenerating) return;
+                document.querySelectorAll('.app-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedApp = this.dataset.app;
+                resetKeyUI();
+                updateGameLabel();
+                checkGenerateReady();
+            });
+        });
+
+        document.querySelectorAll('.plan').forEach(plan => {
+            plan.addEventListener('click', function() {
+                if (isGenerating) return;
+                document.querySelectorAll('.plan').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                selectedPlan = this.dataset.plan;
+                resetKeyUI();
+                updateExpireLabel();
+                checkGenerateReady();
+            });
+        });
+
+        confirmBtn.addEventListener('click', function() {
+            if (isGenerating) return;
+            const raw = userInput.value.trim();
+            if (raw.length === 0) {
+                userStatus.textContent = '⚠️ Vui lòng nhập tên hoặc mã.';
+                userStatus.style.color = '#e57373';
+                userConfirmed = false;
+                checkGenerateReady();
+                return;
+            }
+            userName = raw;
+            userConfirmed = true;
+            userStatus.textContent = `✅ Đã xác nhận: ${userName} (mã: Leanhquy)`;
+            userStatus.style.color = '#8bc34a';
+            resetKeyUI();
+            checkGenerateReady();
+        });
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') confirmBtn.click();
+        });
+
+        function checkGenerateReady() {
+            if (userConfirmed && !isGenerating) {
+                generateBtn.disabled = false;
+            } else {
+                generateBtn.disabled = true;
+            }
+        }
+
+        function updateGameLabel() {
+            const name = selectedApp === 'freefire' ? 'Free Fire' : 'Free Fire Max';
+            gameLabel.textContent = `Game: ${name}`;
+        }
+
+        function updateExpireLabel() {
+            expireLabel.textContent = selectedPlan === 'free' ? 'Time Expired: 24 Giờ' : 'Time Expired: 30 Ngày';
+        }
+
+        function resetKeyUI() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            keyReady = false;
+            keyGeneratedAt = null;
+            currentKey = '';
+            isGenerating = false;
+            keyDisplay.textContent = '🔒 Chờ 15 phút';
+            keyDisplay.className = 'key-display hidden-key';
+            countdownEl.textContent = '⏳ 15:00';
+            webhookStatus.textContent = '⏳ Đợi xác nhận người dùng...';
+            document.getElementById('webhookStatus').style.color = '#4f6a8f';
+            generateBtn.disabled = !userConfirmed;
+            generateBtn.textContent = '▶ GENERATE';
+        }
+
+        function generateKey() {
+            if (!userConfirmed || isGenerating) return;
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            isGenerating = true;
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ ĐANG TẠO...';
+
+            // Tạo key nhưng giữ bí mật
+            let prefix = selectedPlan === 'free' ? 'Get-KeyA0-' : 'AdminLeanhQuy-TuankietModA2';
+            let randomPart = '';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const len = selectedPlan === 'free' ? 10 : 8;
+            for (let i = 0; i < len; i++) randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+            currentKey = prefix + randomPart + Date.now().toString(36).slice(-3).toUpperCase();
+
+            keyGeneratedAt = Date.now();
+            keyReady = false;
+            keyDisplay.textContent = '🔒 ĐANG TẠO... CHỜ 15 PHÚT';
+            keyDisplay.className = 'key-display hidden-key';
+            countdownEl.textContent = '⏳ 15:00';
+            webhookStatus.textContent = `⏳ Đếm ngược 15 phút... (${userName})`;
+            document.getElementById('webhookStatus').style.color = '#f5b342';
+
+            let remainingSeconds = 900;
+            countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    keyReady = true;
+                    isGenerating = false;
+                    countdownEl.textContent = '✅ SẴN SÀNG';
+                    // HIỂN THỊ KEY
+                    keyDisplay.textContent = currentKey;
+                    keyDisplay.className = 'key-display revealed-key';
+                    webhookStatus.textContent = '✅ Key đã sẵn sàng! Gửi webhook...';
+                    document.getElementById('webhookStatus').style.color = '#8bc34a';
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = '▶ GENERATE';
+                    sendKeyToWebhook(currentKey);
+                } else {
+                    const mins = Math.floor(remainingSeconds / 60);
+                    const secs = remainingSeconds % 60;
+                    countdownEl.textContent = `⏳ ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                }
+            }, 1000);
+
+            updateGameLabel();
+            updateExpireLabel();
+            document.getElementById('deviceLabel').textContent = 'Devices: 1 Máy Duy Nhất';
+        }
+
+        function sendKeyToWebhook(key) {
+            if (!key) return;
+            const webhookURL = 'https://discord.com/api/webhooks/1530796179200409711/_I5RBwKym_aPpEylsSRWC_RrPAqQ7Xr5RzwzqeQ-PMyvQwngVXo2rF1jGJDRfgY7enBb';
+            const planText = selectedPlan === 'free' ? 'FREE 24h' : 'ADMIN 30 ngày (đã mua)';
+            const payload = {
+                content: `🔑 **Key mới**\n\`${key}\`\nGame: ${selectedApp === 'freefire' ? 'Free Fire' : 'Free Fire Max'}\nLoại: ${planText}\nThiết bị: 1 máy duy nhất\nNgười dùng: ${userName} (mã Leanhquy)`
+            };
+            fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) webhookStatus.textContent = '✅ Đã gửi key thành công vào webhook!';
+                else webhookStatus.textContent = '❌ Lỗi gửi webhook (HTTP ' + res.status + ')';
+            })
+            .catch(err => webhookStatus.textContent = '❌ Lỗi kết nối webhook: ' + err.message);
+        }
+
+        generateBtn.addEventListener('click', function() {
+            if (!userConfirmed) {
+                webhookStatus.textContent = '⚠️ Xác nhận người dùng trước.';
+                return;
+            }
+            if (isGenerating) return;
+            resetKeyUI();
+            generateKey();
+        });
+
+        keyDisplay.addEventListener('click', function() {
+            if (currentKey && keyReady) {
+                navigator.clipboard.writeText(currentKey).then(() => {
+                    webhookStatus.textContent = '📋 Đã sao chép key!';
+                    setTimeout(() => webhookStatus.textContent = '✅ Key đã sẵn sàng!', 1500);
+                }).catch(() => {});
+            } else if (currentKey && !keyReady) {
+                webhookStatus.textContent = '⏳ Chưa đủ 15 phút, chưa thể copy.';
+                document.getElementById('webhookStatus').style.color = '#f5b342';
+            }
+        });
+
+        userInput.value = 'TuankietMod';
+        userStatus.textContent = '⏳ Bấm "Xác nhận" để kích hoạt (mã Leanhquy)';
+        userStatus.style.color = '#4f6a8f';
+        updateGameLabel();
+        updateExpireLabel();
+        resetKeyUI();
+        checkGenerateReady();
+    })();
+</script>
+</body>
+</html>
