@@ -45,6 +45,14 @@
         .buy-tag { background: #f5c54233; color: #f5c542; font-size: 10px; padding: 2px 10px; border-radius: 30px; display: inline-block; margin-top: 2px; border: 1px solid #f5c54255; }
         .hidden-key { filter: blur(8px); user-select: none; background: #0a0f16; }
         .revealed-key { filter: none; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .overlay.active { display: flex; }
+        .overlay-content { background: #141a24; border-radius: 28px; padding: 30px; max-width: 420px; width: 90%; border: 1px solid #f5c542; text-align: center; color: #d0e0ff; }
+        .overlay-content h2 { color: #f5c542; margin-bottom: 16px; }
+        .overlay-content p { margin: 12px 0; font-size: 14px; line-height: 1.6; }
+        .overlay-content .btn-close { background: #f5c542; border: none; border-radius: 40px; padding: 12px 24px; font-weight: 700; color: #0b0e14; cursor: pointer; margin-top: 16px; }
+        .overlay-content .btn-close:hover { background: #ffd966; }
+        .overlay-content .key-box { background: #0b0e14; padding: 12px; border-radius: 12px; border: 1px solid #2f3d55; font-family: monospace; font-size: 16px; word-break: break-all; margin: 12px 0; color: #b3d0ff; }
     </style>
 </head>
 <body>
@@ -104,6 +112,24 @@
     <div class="webhook-log">📨 Webhook: discord.com/api/webhooks/...</div>
 </div>
 
+<!-- Popup overlay thay cho chuyển trang -->
+<div class="overlay" id="popupOverlay">
+    <div class="overlay-content">
+        <h2>🎯 HOÀN THÀNH NHIỆM VỤ</h2>
+        <p>Bạn đã nhấn GENERATE. Vui lòng hoàn thành nhiệm vụ bên dưới để nhận key.</p>
+        <div style="background: #1e2632; border-radius: 12px; padding: 16px; margin: 12px 0;">
+            <p style="color: #f5c542; font-weight: 600;">🔗 LINK NHIỆM VỤ</p>
+            <a href="https://yeumoney.com/Zivjvt" target="_blank" style="color: #8bc34a; word-break: break-all; font-size: 14px;">https://yeumoney.com/Zivjvt</a>
+        </div>
+        <p style="font-size: 13px; color: #8ea4c9;">Sau khi hoàn thành, quay lại đây và bấm "Đã hoàn thành" để lấy key.</p>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap;">
+            <button class="btn-close" id="popupConfirmBtn">✅ Đã hoàn thành</button>
+            <button class="btn-close" style="background: #2f3b4e; color: #d0e0ff;" id="popupCancelBtn">❌ Đóng</button>
+        </div>
+        <div id="popupStatus" style="margin-top: 12px; font-size: 12px; color: #f5b342;"></div>
+    </div>
+</div>
+
 <script>
     (function() {
         let selectedApp = 'freefire';
@@ -115,6 +141,7 @@
         let userConfirmed = false;
         let userName = '';
         let isGenerating = false;
+        let popupShown = false;
 
         const keyDisplay = document.getElementById('keyDisplay');
         const gameLabel = document.getElementById('gameLabel');
@@ -125,7 +152,12 @@
         const userInput = document.getElementById('userInput');
         const confirmBtn = document.getElementById('confirmUserBtn');
         const userStatus = document.getElementById('userStatus');
+        const popup = document.getElementById('popupOverlay');
+        const popupConfirm = document.getElementById('popupConfirmBtn');
+        const popupCancel = document.getElementById('popupCancelBtn');
+        const popupStatus = document.getElementById('popupStatus');
 
+        // App buttons
         document.querySelectorAll('.app-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 if (isGenerating) return;
@@ -138,6 +170,7 @@
             });
         });
 
+        // Plan buttons
         document.querySelectorAll('.plan').forEach(plan => {
             plan.addEventListener('click', function() {
                 if (isGenerating) return;
@@ -150,6 +183,7 @@
             });
         });
 
+        // Confirm user
         confirmBtn.addEventListener('click', function() {
             if (isGenerating) return;
             const raw = userInput.value.trim();
@@ -173,7 +207,7 @@
         });
 
         function checkGenerateReady() {
-            if (userConfirmed && !isGenerating) {
+            if (userConfirmed && !isGenerating && !popupShown) {
                 generateBtn.disabled = false;
             } else {
                 generateBtn.disabled = true;
@@ -198,6 +232,7 @@
             keyGeneratedAt = null;
             currentKey = '';
             isGenerating = false;
+            popupShown = false;
             keyDisplay.textContent = '🔒 Chờ 15 phút';
             keyDisplay.className = 'key-display hidden-key';
             countdownEl.textContent = '⏳ 15:00';
@@ -205,13 +240,12 @@
             document.getElementById('webhookStatus').style.color = '#4f6a8f';
             generateBtn.disabled = !userConfirmed;
             generateBtn.textContent = '▶ GENERATE';
+            popup.classList.remove('active');
+            popupStatus.textContent = '';
         }
 
-        function generateKey() {
-            // CHUYỂN HƯỚNG SANG YEUMONEY NGAY LẬP TỨC
-            window.location.href = "https://yeumoney.com/Zivjvt";
-            
-            // Đoạn code phía dưới vẫn chạy nhưng sẽ không kịp thực thi do đã chuyển trang
+        // Hàm tạo key thực tế (gọi khi bấm "Đã hoàn thành" trong popup)
+        function startGenerateKey() {
             if (!userConfirmed || isGenerating) return;
 
             if (countdownInterval) {
@@ -222,7 +256,9 @@
             isGenerating = true;
             generateBtn.disabled = true;
             generateBtn.textContent = '⏳ ĐANG TẠO...';
+            popup.classList.remove('active');
 
+            // Tạo key
             let prefix = selectedPlan === 'free' ? 'Get-KeyA0-' : 'AdminLeanhQuy-TuankietModA2';
             let randomPart = '';
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -285,228 +321,40 @@
             .catch(err => webhookStatus.textContent = '❌ Lỗi kết nối webhook: ' + err.message);
         }
 
+        // Sự kiện GENERATE: hiển thị popup thay vì chuyển trang
         generateBtn.addEventListener('click', function() {
             if (!userConfirmed) {
                 webhookStatus.textContent = '⚠️ Xác nhận người dùng trước.';
                 return;
             }
             if (isGenerating) return;
-            resetKeyUI();
-            generateKey();
-        });
-
-        keyDisplay.addEventListener('click', function() {
-            if (currentKey && keyReady) {
-                navigator.clipboard.writeText(currentKey).then(() => {
-                    webhookStatus.textContent = '📋 Đã sao chép key!';
-                    setTimeout(() => webhookStatus.textContent = '✅ Key đã sẵn sàng!', 1500);
-                }).catch(() => {});
-            } else if (currentKey && !keyReady) {
-                webhookStatus.textContent = '⏳ Chưa đủ 15 phút, chưa thể copy.';
-                document.getElementById('webhookStatus').style.color = '#f5b342';
-            }
-        });
-
-        userInput.value = 'TuankietMod';
-        userStatus.textContent = '⏳ Bấm "Xác nhận" để kích hoạt (mã Leanhquy)';
-        userStatus.style.color = '#4f6a8f';
-        updateGameLabel();
-        updateExpireLabel();
-        resetKeyUI();
-        checkGenerateReady();
-    })();
-</script>
-</body>
-</html>
-<script>
-    (function() {
-        let selectedApp = 'freefire';
-        let selectedPlan = 'free';
-        let currentKey = '';
-        let keyGeneratedAt = null;
-        let countdownInterval = null;
-        let keyReady = false;
-        let userConfirmed = false;
-        let userName = '';
-        let isGenerating = false;
-
-        const keyDisplay = document.getElementById('keyDisplay');
-        const gameLabel = document.getElementById('gameLabel');
-        const expireLabel = document.getElementById('expireLabel');
-        const countdownEl = document.getElementById('countdownTimer');
-        const webhookStatus = document.getElementById('webhookStatus');
-        const generateBtn = document.getElementById('generateBtn');
-        const userInput = document.getElementById('userInput');
-        const confirmBtn = document.getElementById('confirmUserBtn');
-        const userStatus = document.getElementById('userStatus');
-
-        document.querySelectorAll('.app-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (isGenerating) return;
-                document.querySelectorAll('.app-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedApp = this.dataset.app;
-                resetKeyUI();
-                updateGameLabel();
-                checkGenerateReady();
-            });
-        });
-
-        document.querySelectorAll('.plan').forEach(plan => {
-            plan.addEventListener('click', function() {
-                if (isGenerating) return;
-                document.querySelectorAll('.plan').forEach(p => p.classList.remove('active'));
-                this.classList.add('active');
-                selectedPlan = this.dataset.plan;
-                resetKeyUI();
-                updateExpireLabel();
-                checkGenerateReady();
-            });
-        });
-
-        confirmBtn.addEventListener('click', function() {
-            if (isGenerating) return;
-            const raw = userInput.value.trim();
-            if (raw.length === 0) {
-                userStatus.textContent = '⚠️ Vui lòng nhập tên hoặc mã.';
-                userStatus.style.color = '#e57373';
-                userConfirmed = false;
-                checkGenerateReady();
-                return;
-            }
-            userName = raw;
-            userConfirmed = true;
-            userStatus.textContent = `✅ Đã xác nhận: ${userName} (mã: Leanhquy)`;
-            userStatus.style.color = '#8bc34a';
-            resetKeyUI();
-            checkGenerateReady();
-        });
-
-        userInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') confirmBtn.click();
-        });
-
-        function checkGenerateReady() {
-            if (userConfirmed && !isGenerating) {
-                generateBtn.disabled = false;
-            } else {
-                generateBtn.disabled = true;
-            }
-        }
-
-        function updateGameLabel() {
-            const name = selectedApp === 'freefire' ? 'Free Fire' : 'Free Fire Max';
-            gameLabel.textContent = `Game: ${name}`;
-        }
-
-        function updateExpireLabel() {
-            expireLabel.textContent = selectedPlan === 'free' ? 'Time Expired: 24 Giờ' : 'Time Expired: 30 Ngày';
-        }
-
-        function resetKeyUI() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            keyReady = false;
-            keyGeneratedAt = null;
-            currentKey = '';
-            isGenerating = false;
-            keyDisplay.textContent = '🔒 Chờ 15 phút';
-            keyDisplay.className = 'key-display hidden-key';
-            countdownEl.textContent = '⏳ 15:00';
-            webhookStatus.textContent = '⏳ Đợi xác nhận người dùng...';
-            document.getElementById('webhookStatus').style.color = '#4f6a8f';
-            generateBtn.disabled = !userConfirmed;
-            generateBtn.textContent = '▶ GENERATE';
-        }
-
-        function generateKey() {
-            if (!userConfirmed || isGenerating) return;
-
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-
-            isGenerating = true;
+            popupShown = true;
             generateBtn.disabled = true;
-            generateBtn.textContent = '⏳ ĐANG TẠO...';
-
-            // Tạo key nhưng giữ bí mật
-            let prefix = selectedPlan === 'free' ? 'Get-KeyA0-' : 'AdminLeanhQuy-TuankietModA2';
-            let randomPart = '';
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            const len = selectedPlan === 'free' ? 10 : 8;
-            for (let i = 0; i < len; i++) randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
-            currentKey = prefix + randomPart + Date.now().toString(36).slice(-3).toUpperCase();
-
-            keyGeneratedAt = Date.now();
-            keyReady = false;
-            keyDisplay.textContent = '🔒 ĐANG TẠO... CHỜ 15 PHÚT';
-            keyDisplay.className = 'key-display hidden-key';
-            countdownEl.textContent = '⏳ 15:00';
-            webhookStatus.textContent = `⏳ Đếm ngược 15 phút... (${userName})`;
-            document.getElementById('webhookStatus').style.color = '#f5b342';
-
-            let remainingSeconds = 900;
-            countdownInterval = setInterval(() => {
-                remainingSeconds--;
-                if (remainingSeconds <= 0) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                    keyReady = true;
-                    isGenerating = false;
-                    countdownEl.textContent = '✅ SẴN SÀNG';
-                    // HIỂN THỊ KEY
-                    keyDisplay.textContent = currentKey;
-                    keyDisplay.className = 'key-display revealed-key';
-                    webhookStatus.textContent = '✅ Key đã sẵn sàng! Gửi webhook...';
-                    document.getElementById('webhookStatus').style.color = '#8bc34a';
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = '▶ GENERATE';
-                    sendKeyToWebhook(currentKey);
-                } else {
-                    const mins = Math.floor(remainingSeconds / 60);
-                    const secs = remainingSeconds % 60;
-                    countdownEl.textContent = `⏳ ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                }
-            }, 1000);
-
-            updateGameLabel();
-            updateExpireLabel();
-            document.getElementById('deviceLabel').textContent = 'Devices: 1 Máy Duy Nhất';
-        }
-
-        function sendKeyToWebhook(key) {
-            if (!key) return;
-            const webhookURL = 'https://discord.com/api/webhooks/1530796179200409711/_I5RBwKym_aPpEylsSRWC_RrPAqQ7Xr5RzwzqeQ-PMyvQwngVXo2rF1jGJDRfgY7enBb';
-            const planText = selectedPlan === 'free' ? 'FREE 24h' : 'ADMIN 30 ngày (đã mua)';
-            const payload = {
-                content: `🔑 **Key mới**\n\`${key}\`\nGame: ${selectedApp === 'freefire' ? 'Free Fire' : 'Free Fire Max'}\nLoại: ${planText}\nThiết bị: 1 máy duy nhất\nNgười dùng: ${userName} (mã Leanhquy)`
-            };
-            fetch(webhookURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => {
-                if (res.ok) webhookStatus.textContent = '✅ Đã gửi key thành công vào webhook!';
-                else webhookStatus.textContent = '❌ Lỗi gửi webhook (HTTP ' + res.status + ')';
-            })
-            .catch(err => webhookStatus.textContent = '❌ Lỗi kết nối webhook: ' + err.message);
-        }
-
-        generateBtn.addEventListener('click', function() {
-            if (!userConfirmed) {
-                webhookStatus.textContent = '⚠️ Xác nhận người dùng trước.';
-                return;
-            }
-            if (isGenerating) return;
-            resetKeyUI();
-            generateKey();
+            popup.classList.add('active');
+            popupStatus.textContent = '⏳ Chờ bạn hoàn thành nhiệm vụ...';
+            popupStatus.style.color = '#f5b342';
         });
 
+        // Bấm "Đã hoàn thành" trong popup -> bắt đầu tạo key
+        popupConfirm.addEventListener('click', function() {
+            popupStatus.textContent = '✅ Đang xác nhận... Tiến hành tạo key.';
+            popupStatus.style.color = '#8bc34a';
+            setTimeout(() => {
+                startGenerateKey();
+            }, 500);
+        });
+
+        // Bấm "Đóng" -> đóng popup, không tạo key, reset trạng thái
+        popupCancel.addEventListener('click', function() {
+            popup.classList.remove('active');
+            popupShown = false;
+            generateBtn.disabled = false;
+            popupStatus.textContent = '';
+            webhookStatus.textContent = '⏳ Đã hủy. Bấm GENERATE lại để thử.';
+            document.getElementById('webhookStatus').style.color = '#4f6a8f';
+        });
+
+        // Copy key
         keyDisplay.addEventListener('click', function() {
             if (currentKey && keyReady) {
                 navigator.clipboard.writeText(currentKey).then(() => {
@@ -519,6 +367,7 @@
             }
         });
 
+        // Init
         userInput.value = 'TuankietMod';
         userStatus.textContent = '⏳ Bấm "Xác nhận" để kích hoạt (mã Leanhquy)';
         userStatus.style.color = '#4f6a8f';
